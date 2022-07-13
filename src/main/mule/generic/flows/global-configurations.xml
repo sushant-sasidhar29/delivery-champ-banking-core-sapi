@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway"
+	xmlns:tls="http://www.mulesoft.org/schema/mule/tls" 
+	xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd
+http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd">
+	<configuration-properties doc:name="Configuration properties" doc:id="c9cfc265-8530-4080-a1da-a0e5fc7b152a" file="config/delivery-champ-banking-core-sapi-dev.yaml" />
+	<global-property doc:name="Global Property" doc:id="7e4e5e59-b2df-49a5-b9fb-35e1f0cf307a" name="environment" value="dev" />
+	<api-gateway:autodiscovery apiId="${api.id}" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="2a2c4d51-07d0-4b01-9552-a3d9c403cdae" flowRef="delivery-champ-banking-core-sapi-main" />
+<http:listener-config name="delivery-champ-banking-core1-sapi-http-listener-config">
+        <http:listener-connection host="0.0.0.0" port="${https.port}" protocol="HTTPS">
+			<tls:context >
+				<tls:key-store type="jks" path="keystore.jks" alias="${api.keyStore.alias}" keyPassword="${api.keyStore.keyPassword}" password="${api.keyStore.storePassword}" />
+			</tls:context>
+		</http:listener-connection>
+    </http:listener-config>
+    	<http:request-config name="delivery-champ-banking-core-papi-http-request-config" doc:name="HTTP Request configuration" doc:id="0ac0c710-30d9-44d7-a81f-e5dadca7a7f5" >
+		<http:request-connection protocol="${&lt;papi_name&gt;-papi.protocol}" host="${&lt;papi_name&gt;-papi.host}" port="${&lt;papi_name&gt;-papi.port}" >
+			<tls:context >
+				<tls:trust-store insecure="true" />
+			</tls:context>
+		</http:request-connection>
+	</http:request-config>
+</mule>

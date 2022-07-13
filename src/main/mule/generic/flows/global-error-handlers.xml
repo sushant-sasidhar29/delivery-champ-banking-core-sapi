@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" 
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<error-handler name="global-exception-handler-all-errors"
+		doc:id="15933166-1924-4cdb-8fed-08290ce09d56">
+		<on-error-continue enableNotifications="true"
+			logException="true" doc:name="On Error Continue"
+			doc:id="4b5e15ef-fc59-4c2e-9f9c-99a31a98be6f" when='error.errorType.namespace == "HTTP"'>
+			<flow-ref doc:name="set-outboundHeaders-sub-flow"
+				doc:id="95a4ca47-35b7-40dc-9f53-bd260a35764a"
+				name="set-outboundHeaders-sub-flow" />
+		</on-error-continue>
+		<on-error-continue enableNotifications="true"
+			logException="true" doc:name="On Error Continue"
+			doc:id="809d168b-9890-4bca-942d-3b5ef1b1c054" type="ANY">
+			<flow-ref doc:name="internal-error-response-sub-flow"
+				doc:id="b25c5965-3f3c-4003-9322-5454d31d3194"
+				name="internal-error-response-sub-flow" />
+			<flow-ref doc:name="set-outboundHeaders-sub-flow"
+				doc:id="daaf510e-f5be-47f3-a811-76fa288a78cc"
+				name="set-outboundHeaders-sub-flow" />
+		</on-error-continue>
+	</error-handler>
+	<error-handler
+		name="global-exception-handler-external-errors"
+		doc:id="0103ca25-1a13-4422-9266-e12bd14652b6">
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="78bb8d11-9826-4c26-bc95-789df15165b5" when='error.errorType.namespace == "HTTP"'>
+			<set-variable value="#[%dw 2.0&#10;output application/json&#10;var errorIdentifier = (error.errorType.identifier default &quot;&quot;) as String&#10;---&#10;errorIdentifier match {&#10;    case is &quot;INTERNAL_SERVER_ERROR&quot; -&gt; { &quot;errorStatusCode&quot; : &quot;500&quot;,&quot;errorCode&quot; : Mule::p('errorCodes.unknown') }&#10;    case is &quot;TIMEOUT&quot; -&gt;  { &quot;errorStatusCode&quot; : &quot;503&quot;,&quot;errorCode&quot; : Mule::p('errorCodes.connectivity') }&#10;    case is &quot;CONNECTIVITY&quot; -&gt; { &quot;errorStatusCode&quot; : &quot;503&quot;,&quot;errorCode&quot; : Mule::p('errorCodes.connectivity') }&#10;    case is &quot;SERVICE_UNAVAILABLE&quot; -&gt;  { &quot;errorStatusCode&quot; : &quot;503&quot;,&quot;errorCode&quot; : Mule::p('errorCodes.connectivity') }&#10;    case is &quot;NOT_FOUND&quot; -&gt;  { &quot;errorStatusCode&quot; : &quot;404&quot;,&quot;errorCode&quot; : Mule::p('errorCodes.notfound') }&#10;    case is &quot;BAD_REQUEST&quot; -&gt; { &quot;errorStatusCode&quot; : &quot;400&quot;,&quot;errorCode&quot; : Mule::p('errorCodes.badrequest') }&#10;    else -&gt; { &quot;errorStatusCode&quot; : &quot;500&quot;, &quot;errorCode&quot; : Mule::p('errorCodes.unknown') }&#10;}]" doc:name="set errorResponseData" doc:id="29669065-14c4-4119-a6a9-6828e745dbab" variableName="errorResponseData"/>
+			<ee:transform doc:name="http error response" doc:id="4c0f0332-e635-428e-bc3f-ccb9950049ca" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"errorCode": vars.errorResponseData.errorCode default Mule::p('errorCodes.unknown'),
+  	"errorMessage": error.detailedDescription,
+  	"moreDetails": {
+  		error: error.errorMessage.payload default error.description
+  	}
+}]]></ee:set-payload>
+				</ee:message>
+				<ee:variables >
+					<ee:set-variable variableName="httpStatus" ><![CDATA[vars.errorResponseData.errorStatusCode default "500"]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+		</on-error-propagate>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="aaea22b4-cad4-4965-9632-8f3f4587e893" type="ANY">
+			<flow-ref doc:name="internal-error-response-sub-flow" doc:id="91b2a0d6-044a-4a49-b89b-73152a8816fa" name="internal-error-response-sub-flow" />
+		</on-error-propagate>
+	</error-handler>
+	
+	<error-handler
+		name="global-exception-handler-apikit-errors">
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="e47f3c77-be83-4705-9288-dcc4d1a60b31" when='error.errorType.namespace == "APIKIT"'>
+			<set-variable value='#[%dw 2.0
+output application/json
+var errorIdentifier = (error.errorType.identifier default "") as String
+---
+errorIdentifier match {
+    case is "UNSUPPORTED_MEDIA_TYPE" -&gt; "415"
+    case is "NOT_IMPLEMENTED" -&gt; "501"
+    case is "NOT_ACCEPTABLE" -&gt; "406"
+    case is "METHOD_NOT_ALLOWED" -&gt; "405"
+    case is "NOT_FOUND" -&gt; "404"
+    case is "BAD_REQUEST" -&gt; "400"
+    else -&gt; "500"
+}]' doc:name="set httpStatus" doc:id="73b71f9d-0231-4a3b-ba07-9d18cbf1cb78" variableName="httpStatus" />
+<ee:transform doc:name="apikit error response" doc:id="5e3df4db-63b9-4333-9cf5-42fcd40173a9">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "errorCode": vars.httpStatus,
+  "errorMessage": error.cause.message
+}]]></ee:set-payload>
+            </ee:message>
+            <ee:variables>
+                <ee:set-variable variableName="outboundHeaders"><![CDATA[%dw 2.0
+output application/java
+---
+{
+	'x-root-correlation-id' : attributes.headers.'x-root-correlation-id'
+}]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+		</on-error-propagate>
+	</error-handler>
+	</mule>

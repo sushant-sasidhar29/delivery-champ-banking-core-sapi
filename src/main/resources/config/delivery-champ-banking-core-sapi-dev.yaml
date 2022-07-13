@@ -1,0 +1,36 @@
+https:
+  port: "8082"
+  path: "/api/*"
+  
+errorCodes:
+  connectivity: "DN_CONNECTION_ERROR"
+  badrequest: "DN_BAD_REQUEST_ERROR"
+  unknown: "DN_INTERNAL_SERVER_ERROR"
+  notfound: "DN_NOT_FOUND_ERROR" 
+  
+<papi_name>-papi:
+  host: "dn-[domain]-papi-name-papi.de-c1.eu1.cloudhub.io"
+  port: "443"
+  protocol: "HTTPS"
+  clientId: "12"
+  clientSecret: "1233"
+  <resource_name>:
+    path: "/api/itemgroups"
+    responseTimeout: "30000"
+
+
+#Log related properties
+api:
+  name: "dn-[domain]-<eapi_name>-eapi"
+  id: "123456"
+  version: "v1"
+  logCategory: "com.dn.<eapi_name>-eapi"
+  tenantPrefix: "Tenant."
+  keyStore:
+    alias: "mule"
+    algorithm: "RSA"
+    keyPassword: "Key@Dieb0ld"
+    storePassword: "Store@Dieb0ld"
+  jsonLogger:
+    disableFields: ""
+    maskFields: "client_secret,password"

@@ -1,0 +1,29 @@
+%dw 2.0
+
+type auto_c82cc407_8d2b_4974_a207_1d1d16874e5e_Input_Payload = {
+  payload: {
+    amount: {
+      currency?: String, 
+      value?: Number, 
+      _?: Any
+    }, 
+    accountRef: {
+      accountType?: String, 
+      accountNumber?: String, 
+      _?: Any
+    } {"description": "Account references"}, 
+    _?: Any
+  }, 
+  pointOfInteraction: {
+    clientId: String, 
+    channel: "mobile" | "ATM" | "teller", 
+    _?: Any
+  }, 
+  transaction: {
+    clientId: Any, 
+    operation?: String, 
+    _?: Any
+  }, 
+  _?: Any
+}
+

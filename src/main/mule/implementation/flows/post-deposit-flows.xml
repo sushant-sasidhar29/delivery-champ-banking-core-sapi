@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tls="http://www.mulesoft.org/schema/mule/tls"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"  xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd">
+
+	<flow name="post-deposit-main-flow" doc:id="c82cc407-8d2b-4974-a207-1d1d16874e5e" >
+		<flow-ref doc:name="initialize-common-vars-sub-flow" doc:id="f247fe85-3d0a-480c-b78e-d162dee69402" name="initialize-common-vars-sub-flow"/>
+		<logger level="INFO" doc:name="begin log" doc:id="2fd30aa5-a227-4a19-a402-23d4ba863585" message="#[payload]"/>
+		<flow-ref doc:name="post-deposit-sub-flow" doc:id="1bd712fc-4fff-4488-a5f4-54105b9d0c69" name="post-deposit-sub-flow" />
+		<flow-ref doc:name="set-outboundHeaders-sub-flow" doc:id="20e35b09-ca5f-456f-a280-0652bbf206c9" name="set-outboundHeaders-sub-flow"/>
+		<ee:transform doc:name="response mapping" doc:id="09d3b516-9527-4702-b2d6-a93767cd82c6">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+			<ee:variables>
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="end log" doc:id="93e5bd45-be7b-454e-96d2-466b636093d4" message="#[payload]"/>
+		<error-handler ref="global-exception-handler-all-errors" />
+	</flow>
+	<sub-flow name="post-deposit-sub-flow" doc:id="cd66f710-2c7a-4c74-9e39-40f00a3ece37" >
+		<ee:transform doc:name="request mapping for papi call" doc:id="b12dd121-e8c9-43a8-b429-17bb3bc976ab" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[output application/json skipNullOn = "everywhere"
+
+---
+payload.itemGroups map ( itemGroup , indexOfItemGroup ) -> {
+	id: itemGroup.id,
+	name: itemGroup.name,
+	description: itemGroup.description,
+	parentId: itemGroup.parentId
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+			</ee:variables>
+		</ee:transform>
+		<ee:transform doc:name="Transform Message" doc:id="6cfac8e2-6fd3-4490-a341-ca81c3c81740" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "responseCode": "OK",
+  "payload": {
+    "confirmationNumber": "998087999",
+    "accountDetails": {
+      "accountNumber": "12345",
+      "accountType": "Savings",
+      "accountCurrency": "USD",
+      "amounts": [
+        {
+          "value": 100,
+          "amountType": "Available balance",
+          "currency": "USD"
+        }
+      ],
+      "accountStatus": "Active"
+    }
+  }
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	
+</sub-flow>
+</mule>

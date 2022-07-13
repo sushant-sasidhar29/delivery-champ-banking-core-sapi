@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:validation="http://www.mulesoft.org/schema/mule/validation"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<sub-flow name="initialize-common-vars-sub-flow"
+		doc:id="89236d0f-5ddd-452c-8b61-b3e873a0b79e">
+		<set-variable value="#[%dw 2.0&#10;output application/java&#10;---&#10;(if(attributes.headers.'x-root-correlation-id' != null ){&#10;	rcid : attributes.headers.'x-root-correlation-id'&#10;}else{&#10;	rcid : correlationId&#10;}).rcid]" doc:name="set root correlationId" doc:id="58d1159b-fa89-4b4f-8772-3bdc214898b4" variableName="rootCorrelationId"/>
+		<set-variable value='#[((attributes.method default "") ++ ((attributes.requestPath default "") replace /\/api\/v[0-1]\// with ""))]' doc:name="set transactionType" doc:id="e121b69c-9eae-4b71-a930-4db489b908cf" variableName="transactionType" />
+		<set-variable
+			value="#[%dw 2.0
+output application/java
+var tenantIdList = (authentication.properties.claims.roles default []) filter (value, index) -&gt; value startsWith Mule::p('api.tenantPrefix')
+---
+(if(sizeOf(tenantIdList) == 1){
+    tenantId : (tenantIdList[0] splitBy Mule::p('api.tenantPrefix'))[1]
+}else{
+    tenantId : ''
+}).tenantId]"
+			doc:name="set tenantId" doc:id="2b46b677-0890-4587-92b6-9309a73740d1"
+			variableName="tenantId" />		
+	</sub-flow>
+	<sub-flow name="set-outboundHeaders-sub-flow" doc:id="8fcdc6ad-ec82-4376-ab79-c0d5b6b30312" >
+		<ee:transform doc:name="set outboundHeaders" doc:id="641ee38e-8f1b-4491-81ca-6b3c0c959f0d" >
+			<ee:message />
+			<ee:variables >
+				<ee:set-variable variableName="outboundHeaders" ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	'x-root-correlation-id' : vars.rootCorrelationId
+}
+]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+	</sub-flow>
+	
+	
+	<sub-flow name="internal-error-response-sub-flow" doc:id="3d735a87-d7ac-4cb5-9f9b-48e206d42037" >
+		<ee:transform doc:name="error details" doc:id="694a6b76-37c6-4e46-9dc8-53ef87e09e30">
+				<ee:message>
+					<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"errorCode": Mule::p('errorCodes.unknown'),
+  	"errorMessage": error.detailedDescription,
+  	"moreDetails": {
+  		error: error.errorMessage.payload default error.description
+  	}
+}]]></ee:set-payload>
+				</ee:message>
+				<ee:variables>
+					<ee:set-variable variableName="httpStatus"><![CDATA['500']]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+	</sub-flow>
+	
+</mule>
