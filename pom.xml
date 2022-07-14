@@ -15,6 +15,12 @@
 
 		<app.runtime>4.4.0-20220221</app.runtime>
 		<mule.maven.plugin.version>3.5.4</mule.maven.plugin.version>
+		<mule.version>4.4.0</mule.version>
+		<anypoint.username>sushant_psl</anypoint.username>
+		<anypoint.password>Cashedge12$</anypoint.password>
+		<env>Sandbox</env>
+		<business>Delivery Champ</business>
+		<appname>delivery-champ-banking-core-sapi</appname>
 	</properties>
 
 	<build>
@@ -29,6 +35,18 @@
 				<artifactId>mule-maven-plugin</artifactId>
 				<version>${mule.maven.plugin.version}</version>
 				<extensions>true</extensions>
+				<configuration>
+					<cloudHubDeployment>
+						<uri>https://anypoint.mulesoft.com</uri>
+						<muleVersion>${mule.version}</muleVersion>
+						<username>${anypoint.username}</username>
+						<password>${anypoint.password}</password>
+						<environment>${env}</environment>
+						<applicationName>${appname}</applicationName>
+						<businessGroup>${business}</businessGroup>
+						<objectStoreV2>true</objectStoreV2>
+					</cloudHubDeployment>
+				 </configuration>
 			</plugin>
 		</plugins>
 	</build>
